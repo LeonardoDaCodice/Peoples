@@ -1,20 +1,30 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import AppNavigation from './navigation/AppNavigation';
+import AuthNavigation from './navigation/AuthNavigation';
+import UseAuthentication from './utils/UseAuthentication';
+import LoadingScreen from './utils/LoadingScreen';
+
+const Stack = createStackNavigator();
 
 export default function App() {
+  const { isAuthenticated, isLoading } = UseAuthentication();
+
+  if (isLoading) {
+    // Puoi personalizzare una schermata di caricamento qui
+    return <LoadingScreen />;
+  }
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {isAuthenticated ? (
+          <Stack.Screen name="AppNav" component={AppNavigation} />
+        ) : (
+          <Stack.Screen name="AuthNav" component={AuthNavigation} />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

@@ -15,16 +15,41 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.leonardodacodice.Peoples",
+      "supportsTablet": true,
+      "config": {
+        "googleMaps": {
+          "apiKey": "LA_TUA_CHIAVE_API"
+        }
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Abbiamo bisogno della tua posizione per mostrarti le persone nelle vicinanze.",
+        "NSLocationAlwaysUsageDescription": "Abbiamo bisogno della tua posizione per mostrarti le persone nelle vicinanze."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "package": "com.leonardodacodice.Peoples",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyA1laEFdsV0ueacdt0E6Y48A3P40wR6_pY"
+        }
       }
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "5febcdb9-20d8-4707-83b9-a3963c6825a9"
+      }
     }
   }
 }
