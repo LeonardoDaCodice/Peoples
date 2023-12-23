@@ -1,7 +1,9 @@
 // useAuthentication.js
 import { useState, useEffect } from 'react';
 import { auth } from '../../config/firebase'; 
-import { getFirestore, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, updateDoc, setDoc, getDocs, collection } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
 
 const UseAuthentication = () => {
   const [userProfile, setUserProfile] = useState(null);
@@ -115,7 +117,7 @@ const UseAuthentication = () => {
 
 
 
-      // Funzione per caricare la posizione dell'utente
+  // Funzione per caricare la posizione dell'utente
   const uploadUserLocation = async (latitude, longitude) => {
     try {
       const uid = auth.currentUser.uid;
@@ -135,7 +137,52 @@ const UseAuthentication = () => {
 
 
 
-  return { userProfile, isLoading, handleLogout, updateProfile, configureProfile, getUserData };
+  const getUsersData = async () => {
+    try {
+      const db = getFirestore();
+      const usersCollection = collection(db, 'users');
+      const usersSnapshot = await getDocs(usersCollection);
+      return usersSnapshot.docs.map((doc) => doc.data());
+    } catch (error) {
+      console.error('Error getting users data:', error);
+      throw error;
+    }
+  };
+
+
+
+  const uploadProfileImage = async (imageUri) => {
+    try {
+      const uid = auth.currentUser.uid;
+      const storage = getStorage();
+      const storageRef = ref(storage, `profile_images/${uid}`);
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+
+      await uploadBytes(storageRef, blob);
+      const downloadURL = await getDownloadURL(storageRef);
+
+      // Aggiorna l'URL dell'immagine del profilo nel documento dell'utente
+      const db = getFirestore();
+      const userDocRef = doc(db, 'users', uid);
+      await updateDoc(userDocRef, { profileImage: downloadURL });
+
+      // Aggiorna lo stato locale dell'utente con l'URL dell'immagine del profilo
+      setUserProfile((prevUserProfile) => ({
+        ...prevUserProfile,
+        profileImage: downloadURL,
+      }));
+
+      console.log('Immagine del profilo caricata con successo.');
+    } catch (error) {
+      console.error('Errore durante il caricamento dell\'immagine del profilo:', error);
+      throw error;
+    }
+  };
+
+
+
+  return { userProfile, isLoading, handleLogout, updateProfile, configureProfile, getUserData, getUsersData, uploadUserLocation, uploadProfileImage };
 };
 
 

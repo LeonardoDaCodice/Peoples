@@ -63,13 +63,14 @@ export default function ProfileScreen() {
   };
 
 
+  
   const selectProfileImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       alert('Permesso negato per accedere alla libreria del cellulare.');
       return;
     }
-
+  
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -77,20 +78,18 @@ export default function ProfileScreen() {
         aspect: [4, 3],
         quality: 1,
       });
-
+  
       if (!result.canceled) {
         const selectedAsset = result.assets && result.assets.length > 0 ? result.assets[0] : null;
-
+  
         if (selectedAsset) {
-          const updatedProfile = { ...userProfile, profileImage: selectedAsset };
-          updateProfile(updatedProfile);
+          await updateProfileImage(selectedAsset.uri);
         }
       }
     } catch (error) {
       console.error('Errore durante la selezione dell\'immagine:', error);
     }
   };
-
 
 
   const handleDeleteProfile = () => {
@@ -178,8 +177,8 @@ export default function ProfileScreen() {
             }}
           >
             <Image
-              source={userProfile?.profileImage || profileData.profileImage}
-              style={{ width: '100%', height: '100%', borderRadius: 60 }}
+            source={{ uri: userProfile?.profileImage }}
+            style={{ width: '100%', height: '100%', borderRadius: 60 }}
             />
           </View>
         </TouchableOpacity>

@@ -4,12 +4,7 @@ import MapView, { Marker, Circle } from 'react-native-maps';
 import Slider from '@react-native-community/slider';
 import * as Location from 'expo-location';
 import LoadingScreen from '../../utils/LoadingScreen';
-
-const people = [
-  { id: 1, name: 'Persona 1', latitude: 41.111, longitude: 16.8554000, imageUrl: require('./persona1.png') },
-  { id: 2, name: 'Persona 2', latitude: 37.789, longitude: -122.431, imageUrl: require('./persona1.png') },
-  // Aggiungi altre persone secondo necessità
-];
+import UseAuthentication from '../../utils/UseAuthentication';
 
 export default function LocationScreen() {
   const [location, setLocation] = useState(null);
@@ -18,12 +13,13 @@ export default function LocationScreen() {
   const [peopleVisualizzati, setPeopleVisualizzati] = useState([]);
   const mapRef = useRef(null);
 
+  const { uploadUserLocation, getUsersData } = UseAuthentication();
+
   useEffect(() => {
-    (async () => {
+    const getLocation = async () => {
       const { status } = await Location.getForegroundPermissionsAsync();
 
       if (status !== 'granted') {
-        // I permessi non sono stati concessi
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
           setErrorMsg('Permission to access location was denied');
@@ -37,13 +33,17 @@ export default function LocationScreen() {
       }
 
       try {
-        let location = await Location.getCurrentPositionAsync({});
-        setLocation(location);
-        setPeopleVisualizzati(people);
+        const userLocation = await Location.getCurrentPositionAsync({});
+        setLocation(userLocation);
+
+        const usersData = await getUsersData();
+        setPeopleVisualizzati(usersData);
+        
+        uploadUserLocation(userLocation.coords.latitude, userLocation.coords.longitude);
 
         mapRef.current.animateToRegion({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
+          latitude: userLocation.coords.latitude,
+          longitude: userLocation.coords.longitude,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         });
@@ -51,7 +51,43 @@ export default function LocationScreen() {
         console.error('Error getting location:', error);
         setErrorMsg('Error getting location');
       }
-    })();
+    };
+
+    const fetchData = async () => {
+      try {
+        const userLocation = await Location.getCurrentPositionAsync({});
+        setLocation(userLocation);
+
+        const usersData = await getUsersData();
+
+        const peopleFiltrati = usersData.filter((person) => {
+          const distanzaTraPersonEPosizione = calcolaDistanzaTraCoordinate(
+            userLocation.coords.latitude,
+            userLocation.coords.longitude,
+            person.latitude,
+            person.longitude
+          );
+
+          return distanzaTraPersonEPosizione <= distanza;
+        });
+
+        setPeopleVisualizzati(peopleFiltrati);
+
+        const newMapSize = calculateMapSize(userLocation.coords.latitude, userLocation.coords.longitude, distanza);
+
+        mapRef.current.animateToRegion({
+          latitude: userLocation.coords.latitude,
+          longitude: userLocation.coords.longitude,
+          ...newMapSize,
+        });
+      } catch (error) {
+        console.error('Error getting location or user data:', error);
+        setErrorMsg('Error getting location or user data');
+      }
+    };
+
+    getLocation();
+    fetchData();
   }, []);
 
   if (errorMsg) {
@@ -66,28 +102,35 @@ export default function LocationScreen() {
     return <LoadingScreen />;
   }
 
-  const filtraPeople = () => {
-    const peopleFiltrati = people.filter((person) => {
-      const distanzaTraPersonEPosizione = calcolaDistanzaTraCoordinate(
-        location.coords.latitude,
-        location.coords.longitude,
-        person.latitude,
-        person.longitude
-      );
-
-      return distanzaTraPersonEPosizione <= distanza;
-    });
-
-    setPeopleVisualizzati(peopleFiltrati);
-
-    const newMapSize = calculateMapSize(location.coords.latitude, location.coords.longitude, distanza);
-
-    mapRef.current.animateToRegion({
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-      ...newMapSize,
-    });
+  const filtraPeople = async () => {
+    try {
+      const usersData = await getUsersData();
+      const peopleFiltrati = usersData.filter((person) => {
+        const distanzaTraPersonEPosizione = calcolaDistanzaTraCoordinate(
+          location.coords.latitude,
+          location.coords.longitude,
+          person.latitude,
+          person.longitude
+        );
+  
+        return distanzaTraPersonEPosizione <= distanza;
+      });
+  
+      setPeopleVisualizzati(peopleFiltrati);
+  
+      const newMapSize = calculateMapSize(location.coords.latitude, location.coords.longitude, distanza);
+  
+      mapRef.current.animateToRegion({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        ...newMapSize,
+      });
+    } catch (error) {
+      console.error('Error getting user data:', error);
+      setErrorMsg('Error getting user data');
+    }
   };
+  
 
   const calculateMapSize = (latitude, longitude, distanza) => {
     const aspectRatio = 1;
