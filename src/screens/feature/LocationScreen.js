@@ -5,18 +5,17 @@ import Slider from '@react-native-community/slider';
 import * as Location from 'expo-location';
 import LoadingScreen from '../../utils/LoadingScreen';
 
-
-const monumenti = [
-  { id: 1, nome: 'Monumento 1', latitude: 41.111, longitude: 16.8554000, imageUrl: require('./monumento1.png') },
-  { id: 2, nome: 'Monumento 2', latitude: 37.789, longitude: -122.431 },
-  // Aggiungi altri monumenti secondo necessità
+const people = [
+  { id: 1, name: 'Persona 1', latitude: 41.111, longitude: 16.8554000, imageUrl: require('./persona1.png') },
+  { id: 2, name: 'Persona 2', latitude: 37.789, longitude: -122.431, imageUrl: require('./persona1.png') },
+  // Aggiungi altre persone secondo necessità
 ];
 
 export default function LocationScreen() {
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [distanza, setDistanza] = useState(1); // Valore di default per la distanza
-  const [monumentiVisualizzati, setMonumentiVisualizzati] = useState([]);
+  const [distanza, setDistanza] = useState(1);
+  const [peopleVisualizzati, setPeopleVisualizzati] = useState([]);
   const mapRef = useRef(null);
 
   useEffect(() => {
@@ -40,7 +39,7 @@ export default function LocationScreen() {
       try {
         let location = await Location.getCurrentPositionAsync({});
         setLocation(location);
-        setMonumentiVisualizzati(monumenti);
+        setPeopleVisualizzati(people);
 
         mapRef.current.animateToRegion({
           latitude: location.coords.latitude,
@@ -67,27 +66,22 @@ export default function LocationScreen() {
     return <LoadingScreen />;
   }
 
-  const filtraMonumenti = () => {
-    const monumentiFiltrati = monumenti.filter((monumento) => {
-      const distanzaTraMonumentoEPosizione = calcolaDistanzaTraCoordinate(
+  const filtraPeople = () => {
+    const peopleFiltrati = people.filter((person) => {
+      const distanzaTraPersonEPosizione = calcolaDistanzaTraCoordinate(
         location.coords.latitude,
         location.coords.longitude,
-        monumento.latitude,
-        monumento.longitude
+        person.latitude,
+        person.longitude
       );
 
-      return distanzaTraMonumentoEPosizione <= distanza;
+      return distanzaTraPersonEPosizione <= distanza;
     });
 
-    setMonumentiVisualizzati(monumentiFiltrati);
+    setPeopleVisualizzati(peopleFiltrati);
 
-
-    // Calcola la nuova dimensione della mappa in base al raggio del cerchio
     const newMapSize = calculateMapSize(location.coords.latitude, location.coords.longitude, distanza);
-    
 
-
-    // Anima la mappa alla nuova regione
     mapRef.current.animateToRegion({
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
@@ -126,7 +120,6 @@ export default function LocationScreen() {
     return deg * (Math.PI / 180);
   };
 
- 
   return (
     <View style={{ flex: 1 }}>
       <MapView
@@ -150,18 +143,18 @@ export default function LocationScreen() {
           />
         )}
 
-        {monumentiVisualizzati.map((monumento) => (
+        {peopleVisualizzati.map((person) => (
           <Marker
-            key={monumento.id}
+            key={person.id}
             coordinate={{
-              latitude: monumento.latitude,
-              longitude: monumento.longitude,
+              latitude: person.latitude,
+              longitude: person.longitude,
             }}
-            title={monumento.nome}
-            description={`Posizione del ${monumento.nome}`}
+            title={person.name}
+            description={`Posizione di ${person.name}`}
           >
             <Image
-              source={monumento.imageUrl}
+              source={person.imageUrl}
               style={{
                 width: 35,
                 height: 35,
@@ -173,16 +166,15 @@ export default function LocationScreen() {
           </Marker>
         ))}
 
-
-      {location && (
+        {location && (
           <Circle
             center={{
               latitude: location.coords.latitude,
               longitude: location.coords.longitude,
             }}
-            radius={distanza * 1000} // Converti la distanza da km a metri
+            radius={distanza * 1000}
             strokeColor="green"
-            fillColor="rgba(0, 128, 0, 0.3)" // Colore del riempimento del cerchio con opacità
+            fillColor="rgba(0, 128, 0, 0.3)"
           />
         )}
       </MapView>
@@ -197,12 +189,11 @@ export default function LocationScreen() {
           borderRadius: 10,
         }}
         onPress={() => {
-          // Azione da eseguire quando l'utente preme il pulsante
           if (location) {
             mapRef.current.animateToRegion({
               latitude: location.coords.latitude,
               longitude: location.coords.longitude,
-              latitudeDelta: 0.001,//0.001 equivale a 10 metri
+              latitudeDelta: 0.001,
               longitudeDelta: 0.001,
             });
           }
@@ -213,8 +204,6 @@ export default function LocationScreen() {
 
       <View style={{ position: 'absolute', bottom: 16, alignSelf: 'center' }}>
         <View style={{ backgroundColor: 'white', padding: 10, borderRadius: 10 }}>
-        
-
           <View style={{ marginTop: 10, marginBottom: 5, flexDirection: 'row', alignItems: 'center' }}>
             <Text style={{ color: 'black' }}>Distanza selezionata: </Text>
             <Text style={{ color: 'green', fontWeight: 'bold' }}>{distanza.toFixed(2)} km</Text>
@@ -223,14 +212,13 @@ export default function LocationScreen() {
           <Slider
             style={{ width: 300, height: 40 }}
             minimumValue={0.05}
-            
             maximumValue={0.25}
             step={0.05}
             value={distanza}
             minimumTrackTintColor="green"
-            thumbTintColor="green"  // Impostare il colore del pallino
+            thumbTintColor="green"
             onValueChange={(value) => setDistanza(value)}
-            onSlidingComplete={filtraMonumenti}
+            onSlidingComplete={filtraPeople}
           />
         </View>
       </View>

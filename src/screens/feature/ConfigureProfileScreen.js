@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, Image, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { doc, setDoc, getFirestore } from 'firebase/firestore';
-import { auth } from '../../config/firebase'; // Assicurati di utilizzare il percorso corretto
+import { auth } from '../../../config/firebase'; // Assicurati di utilizzare il percorso corretto
 import { useNavigation } from '@react-navigation/native';
+import UseAuthentication from '../../utils/UseAuthentication';
+
 
 export default function ConfigureProfileScreen() {
   const [name, setName] = useState('');
@@ -10,6 +12,8 @@ export default function ConfigureProfileScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
 
   const navigation = useNavigation();
+  const { configureProfile } = UseAuthentication();
+
 
   const handleProfileConfiguration = async () => {
     try {
@@ -33,31 +37,27 @@ export default function ConfigureProfileScreen() {
         return;
       }
 
-      // Ottieni l'uid dell'utente attuale.
-      const uid = auth.currentUser.uid;
 
-      // Salva le informazioni del profilo in Firestore
-      const db = getFirestore();
-      const userDocRef = doc(db, 'users', uid);
-  
-      // Aggiungi il documento con i campi uid, email e altre informazioni del profilo
-      await setDoc(userDocRef, {
-        uid: uid,
-        email: auth.currentUser.email,
-        name,
-        surname,
-        phoneNumber,
-        // Altre informazioni del profilo che desideri salvare
-      });
+      await configureProfile(name, surname, phoneNumber);
 
-      // Dopo aver completato la configurazione del profilo, reindirizza l'utente alla schermata principale o dove desideri
-      navigation.navigate('HomeTabs');
+     
+
+      // Dopo aver completato la configurazione del profilo, invoco lo stack di navigazione della HomeTab
+      //navigation.navigate('HomeTabs');
+      navigation.navigate('AppNavigation');
+
+     
+      //setAuthenticationStatus(true);
+
+
     } catch (error) {
       console.error('Errore durante la configurazione del profilo:', error.message);
       // Gestisci gli errori di configurazione del profilo
       Alert.alert('Errore', 'Si è verificato un errore durante la configurazione del profilo.');
+      
+      //setAuthenticationStatus(false);
     }
-  };
+  }; 
 
   return (
     <View style={styles.container}>

@@ -9,9 +9,9 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomeScreen from '../screens/HomeScreen'; // Importa la HomeScreen
 import ProfileScreen from '../screens/feature/ProfileScreen';
-import HeartScreen from '../screens/feature/ChatScreen';
 import LocationScreen from '../screens/feature/LocationScreen';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import ChatScreen from '../screens/feature/ChatScreen';
 
 
 const Tab = createBottomTabNavigator();
@@ -20,12 +20,15 @@ const HomeTabs = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       tabBarActiveTintColor: 'tomato',
-      tabBarInactiveTintColor: 'gray',
+      tabBarInactiveTintColor: 'black',
       tabBarShowLabel: false,
+      tabBarStyle: {
+        backgroundColor: '#ffffff', // Colore di sfondo della barra di navigazione
+      },
       tabBarIcon: ({ focused, color, size }) => {
         let iconName;
         if (route.name === 'Home') {
-          iconName = focused ? 'home' : 'home';
+          iconName = focused ? 'th' : 'th';
         } else if (route.name === 'Profilo') {
           iconName = focused ? 'user' : 'user';
         } else if (route.name === 'Chat') {
@@ -39,7 +42,7 @@ const HomeTabs = () => (
   >
     <Tab.Screen name="Home" component={HomeScreen} />
     <Tab.Screen name="Posizione" component={LocationScreen} />
-    <Tab.Screen name="Chat" component={HeartScreen} />
+    <Tab.Screen name="Chat" component={ChatScreen} />
     <Tab.Screen name="Profilo" component={ProfileScreen} />
   </Tab.Navigator>
 );

@@ -10,6 +10,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import LoginScreen from '../screens/login/LoginScreen';
 import EmailLoginScreen from '../screens/login/EmailLoginScreen';
 import ConfigureProfileScreen from '../screens/feature/ConfigureProfileScreen';
+//import HomeTabs from './AppNavigation';
+import AppNavigation from './AppNavigation'
 
 const Stack = createStackNavigator();
 
@@ -18,8 +20,16 @@ const AuthNavigation = () => (
     <Stack.Screen name="Login" component={LoginScreen} />
     <Stack.Screen name="EmailLogin" component={EmailLoginScreen} />
     <Stack.Screen name="ConfigureProfile" component={ConfigureProfileScreen} />
+
+    <Stack.Screen name="AppNavigation" component={AppNavigation}
+     options={{ headerShown: false, gestureEnabled: false }}/>
     {/* Aggiungi altre schermate qui */}
   </Stack.Navigator>
 );
 
 export default AuthNavigation;
+ 
+
+
+/*<Stack.Screen name="HomeTabs" component={HomeTabs}
+  options={{ headerShown: false, gestureEnabled: false }}/>*/

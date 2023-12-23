@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { auth } from '../../config/firebase'; 
+import { auth } from '../../../config/firebase'; 
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -24,6 +24,7 @@ export default function EmailLoginScreen() {
   const [isRegistrationLinkVisible, setRegistrationLinkVisible] = useState(true);
   const navigation = useNavigation();
 
+  //const { setAuthenticationStatus } = useAuthentication();
 
 
 
@@ -85,7 +86,10 @@ export default function EmailLoginScreen() {
 
 
         // Utilizza navigation.replace invece di navigation.navigate
-        navigation.navigate('HomeTabs');
+        //navigation.navigate('HomeTabs');
+
+        //setAuthenticationStatus(true);
+
 
 /************************************************/
 
