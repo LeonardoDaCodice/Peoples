@@ -63,14 +63,13 @@ export default function ProfileScreen() {
   };
 
 
-  
   const selectProfileImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       alert('Permesso negato per accedere alla libreria del cellulare.');
       return;
     }
-  
+
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -78,18 +77,20 @@ export default function ProfileScreen() {
         aspect: [4, 3],
         quality: 1,
       });
-  
+
       if (!result.canceled) {
         const selectedAsset = result.assets && result.assets.length > 0 ? result.assets[0] : null;
-  
+
         if (selectedAsset) {
-          await updateProfileImage(selectedAsset.uri);
+          const updatedProfile = { ...userProfile, profileImage: selectedAsset };
+          updateProfile(updatedProfile);
         }
       }
     } catch (error) {
       console.error('Errore durante la selezione dell\'immagine:', error);
     }
   };
+
 
 
   const handleDeleteProfile = () => {
@@ -177,8 +178,8 @@ export default function ProfileScreen() {
             }}
           >
             <Image
-            source={{ uri: userProfile?.profileImage }}
-            style={{ width: '100%', height: '100%', borderRadius: 60 }}
+              source={userProfile?.profileImage || profileData.profileImage}
+              style={{ width: '100%', height: '100%', borderRadius: 60 }}
             />
           </View>
         </TouchableOpacity>
@@ -186,7 +187,7 @@ export default function ProfileScreen() {
         <Text style={headerTextStyle}>Il tuo Profilo</Text>
 
         <View style={inputContainerStyle}>
-          <Text style={{ fontSize: 18, color: 'black', marginBottom: 10 }}>Link Social:</Text>
+          <Text style={{ fontSize: 18, color: '', marginBottom: 10 }}>Link Social:</Text>
           <SocialLinkInput
             platform="Facebook"
             link={userProfile?.socialLinks?.facebook || ''}
@@ -268,7 +269,7 @@ export default function ProfileScreen() {
 const SocialLinkInput = ({ platform, link, onUpdateLink, style }) => {
   return (
     <View style={style}>
-      <Text style={{ fontSize: 14, color: 'black', marginBottom: 5 }}>{platform}</Text>
+      <Text style={{ fontSize: 14, color: '#777', marginBottom: 5 }}>{platform}</Text>
       <TextInput
         placeholder={`Link ${platform}`}
         value={link}
@@ -282,7 +283,7 @@ const SocialLinkInput = ({ platform, link, onUpdateLink, style }) => {
 const TextInputWithLabel = ({ label, value, onChangeText, placeholder, style }) => {
   return (
     <View style={style}>
-      <Text style={{ fontSize: 14, color: 'black', marginBottom: 5 }}>{label}</Text>
+      <Text style={{ fontSize: 14, color: '#777', marginBottom: 5 }}>{label}</Text>
       <TextInput
         placeholder={placeholder}
         value={value}
