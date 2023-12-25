@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Card, Image } from 'react-native-elements';
 import useAuthentication from '../utils/UseAuthentication';
 import LoadingScreen from '../utils/LoadingScreen';
@@ -9,6 +9,8 @@ export default function HomeScreen({ navigation }) {
   const [loggingOut, setLoggingOut] = useState(false);
   const [userNickname, setUserNickname] = useState(null);
   const [usersData, setUsersData] = useState([]);
+  const [flippedCardId, setFlippedCardId] = useState(null);
+  const flipAnimations = {};
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -44,6 +46,29 @@ export default function HomeScreen({ navigation }) {
     fetchUsersData();
   }, []);
 
+  const handleCardPress = (cardId) => {
+    setFlippedCardId(cardId);
+
+    flipAnimations[cardId].setValue(0);
+    Animated.timing(flipAnimations[cardId], {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const resetFlip = () => {
+    setFlippedCardId(null);
+
+    Object.keys(flipAnimations).forEach((cardId) => {
+      Animated.timing(flipAnimations[cardId], {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
+
   if (isLoading || loggingOut) {
     return <LoadingScreen />;
   }
@@ -52,17 +77,45 @@ export default function HomeScreen({ navigation }) {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.welcomeText}>Welcome, {userNickname || 'Guest'}!</Text>
       <View style={styles.cardsContainer}>
-        {usersData.map((user) => (
-          <Card key={user.id} containerStyle={styles.card}>
-            <Image source={{ uri: user.profileImage }} style={styles.userImage} />
-            <Text style={styles.userName}>{user.nickname}</Text>
-          </Card>
-        ))}
+        {usersData.map((user) => {
+          flipAnimations[user.id] = new Animated.Value(0);
+
+          return (
+            <TouchableOpacity key={user.id} onPress={() => handleCardPress(user.id)}>
+              <Animated.View
+                style={[
+                  user.id === flippedCardId && { zIndex: 1 },
+                  {
+                    transform: [
+                      {
+                        rotateY: flipAnimations[user.id].interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['0deg', '180deg'],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+               <Card containerStyle={styles.card}>
+                <Image source={{ uri: user.profileImage }} style={styles.userImage} />
+                <View style={styles.userNameContainer}>
+                  <Text numberOfLines={1} ellipsizeMode="tail" style={styles.userName}>
+                    {user.nickname}
+                  </Text>
+                </View>
+              </Card>
+              </Animated.View>
+            </TouchableOpacity>
+          );
+        })}
       </View>
       {/* Altre componenti dell'app */}
     </ScrollView>
   );
 }
+
+
 
 const styles = StyleSheet.create({
   container: {
@@ -76,28 +129,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cardsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    width: '100%',
+
   },
+
   card: {
-    width: '60%', // Occupa il 48% della larghezza del container
-    marginBottom: 20,
+    flex: 1,
     borderRadius: 16,
     overflow: 'hidden',
-    elevation: 55,
   },
   userImage: {
     width: '100%',
     height: 200,
-    resizeMode: 'cover',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
+  },
+  userNameContainer: {
+    padding: 10,
+    width: '100%',
   },
   userName: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 10,
     textAlign: 'center',
   },
 });

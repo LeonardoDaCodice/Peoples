@@ -187,7 +187,7 @@ export default function ProfileScreen() {
         <Text style={headerTextStyle}>Il tuo Profilo</Text>
 
         <View style={inputContainerStyle}>
-          <Text style={{ fontSize: 18, color: '', marginBottom: 10 }}>Link Social:</Text>
+          <Text style={{ fontSize: 18, color: 'black', marginBottom: 10 }}>Link Social:</Text>
           <SocialLinkInput
             platform="Facebook"
             link={userProfile?.socialLinks?.facebook || ''}
