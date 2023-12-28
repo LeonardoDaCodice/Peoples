@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Card, Image } from 'react-native-elements';
 import useAuthentication from '../utils/UseAuthentication';
@@ -6,11 +6,10 @@ import LoadingScreen from '../utils/LoadingScreen';
 
 export default function HomeScreen({ navigation }) {
   const { isLoading, user, getUserData } = useAuthentication();
-  const [loggingOut, setLoggingOut] = useState(false);
   const [userNickname, setUserNickname] = useState(null);
   const [usersData, setUsersData] = useState([]);
-  const [flippedCardId, setFlippedCardId] = useState(null);
-  const flipAnimations = {};
+  const [flippedCards, setFlippedCards] = useState([]);
+  const flipAnimations = useRef({}).current;
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -47,18 +46,27 @@ export default function HomeScreen({ navigation }) {
   }, []);
 
   const handleCardPress = (cardId) => {
-    setFlippedCardId(cardId);
-
-    flipAnimations[cardId].setValue(0);
-    Animated.timing(flipAnimations[cardId], {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
+    setFlippedCards((prevFlippedCards) => {
+      const isFlipped = prevFlippedCards.includes(cardId);
+  
+      // Inverti il valore di flip
+      const newFlippedCards = isFlipped
+        ? prevFlippedCards.filter((id) => id !== cardId)
+        : [...prevFlippedCards, cardId];
+  
+      // Avvia l'animazione di flip
+      Animated.timing(flipAnimations[cardId], {
+        toValue: newFlippedCards.includes(cardId) ? 1 : 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+  
+      return newFlippedCards;
+    });
   };
-
+  
   const resetFlip = () => {
-    setFlippedCardId(null);
+    setFlippedCards([]);
 
     Object.keys(flipAnimations).forEach((cardId) => {
       Animated.timing(flipAnimations[cardId], {
@@ -69,7 +77,7 @@ export default function HomeScreen({ navigation }) {
     });
   };
 
-  if (isLoading || loggingOut) {
+  if (isLoading) {
     return <LoadingScreen />;
   }
 
@@ -78,13 +86,15 @@ export default function HomeScreen({ navigation }) {
       <Text style={styles.welcomeText}>Welcome, {userNickname || 'Guest'}!</Text>
       <View style={styles.cardsContainer}>
         {usersData.map((user) => {
-          flipAnimations[user.id] = new Animated.Value(0);
+          if (!flipAnimations[user.id]) {
+            flipAnimations[user.id] = new Animated.Value(0);
+          }
 
           return (
             <TouchableOpacity key={user.id} onPress={() => handleCardPress(user.id)}>
               <Animated.View
                 style={[
-                  user.id === flippedCardId && { zIndex: 1 },
+                  flippedCards.includes(user.id) && { zIndex: 1 },
                   {
                     transform: [
                       {
@@ -97,14 +107,14 @@ export default function HomeScreen({ navigation }) {
                   },
                 ]}
               >
-               <Card containerStyle={styles.card}>
-                <Image source={{ uri: user.profileImage }} style={styles.userImage} />
-                <View style={styles.userNameContainer}>
-                  <Text numberOfLines={1} ellipsizeMode="tail" style={styles.userName}>
-                    {user.nickname}
-                  </Text>
-                </View>
-              </Card>
+                <Card containerStyle={styles.card}>
+                  <Image source={{ uri: user.profileImage }} style={styles.userImage} />
+                  <View style={styles.userNameContainer}>
+                    <Text numberOfLines={1} ellipsizeMode="tail" style={styles.userName}>
+                      {user.nickname}
+                    </Text>
+                  </View>
+                </Card>
               </Animated.View>
             </TouchableOpacity>
           );
@@ -114,8 +124,6 @@ export default function HomeScreen({ navigation }) {
     </ScrollView>
   );
 }
-
-
 
 const styles = StyleSheet.create({
   container: {
@@ -132,9 +140,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'stretch',
     width: '100%',
-
   },
-
   card: {
     flex: 1,
     borderRadius: 16,

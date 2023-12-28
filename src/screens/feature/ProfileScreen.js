@@ -1,67 +1,61 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Image, TouchableOpacity, Alert, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Image, TouchableOpacity, Alert, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import UseAuthentication from '../../utils/UseAuthentication';
 import LoadingScreen from '../../utils/LoadingScreen';
 import { useNavigation } from '@react-navigation/native';
 
-
 export default function ProfileScreen() {
-  const navigation = useNavigation(); // Ottieni l'oggetto di navigazione
-  const { userProfile, isLoading, handleLogout, updateProfile } = UseAuthentication();
+  const navigation = useNavigation();
+  const { userProfile, isLoading, handleLogout, updateProfile, uploadProfileImage } = UseAuthentication();
   const [profileData, setProfileData] = useState({
     profileImage: require('./default-profile-image.png'),
   });
-      const [name, setName] = useState('');
-      const [surname, setSurname] = useState('');
-      const [phoneNumber, setPhoneNumber] = useState('');
-      const [nickname, setNickname] = useState('');
-  
-  
-      const [loggingOut, setLoggingOut] = useState(false);
+  const [name, setName] = useState('');
+  const [surname, setSurname] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [nickname, setNickname] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
+  const updateProfileConfirm = async () => {
+    const nameSurnameRegex = /^[a-zA-Z\s]*$/;
 
-      const updateProfileConfirm = async () => {
-        const nameSurnameRegex = /^[a-zA-Z\s]*$/;
-      
-        if (name.trim() === '' && surname.trim() === '' && nickname.trim() === '' && phoneNumber.trim() === '') {
-          return;
-        }
-      
-        if (!nameSurnameRegex.test(name)) {
-          Alert.alert('Errore', 'Il campo Nome non può contenere caratteri speciali o numeri.');
-          return;
-        }
-      
-        if (!nameSurnameRegex.test(surname)) {
-          Alert.alert('Errore', 'Il campo Cognome non può contenere caratteri speciali o numeri.');
-          return;
-        }
-      
-        const updatedProfile = {
-          ...userProfile,
-          name: name.trim() !== '' ? name.trim() : userProfile.name,
-          surname: surname.trim() !== '' ? surname.trim() : userProfile.surname,
-          nickname: nickname.trim() !== '' ? nickname.trim() : userProfile.nickname,
-          phoneNumber: phoneNumber.trim() !== '' ? phoneNumber.trim() : userProfile.phoneNumber,
-        };
+    if (name.trim() === '' && surname.trim() === '' && nickname.trim() === '' && phoneNumber.trim() === '') {
+      return;
+    }
 
+    if (!nameSurnameRegex.test(name)) {
+      Alert.alert('Errore', 'Il campo Nome non può contenere caratteri speciali o numeri.');
+      return;
+    }
 
-        try {
-          await updateProfile(updatedProfile);
-          Alert.alert('Successo', 'Profilo aggiornato con successo.');
-        } catch (error) {
-          Alert.alert('Errore', 'Si è verificato un errore durante l\'aggiornamento del profilo.');
-        }
-      };
+    if (!nameSurnameRegex.test(surname)) {
+      Alert.alert('Errore', 'Il campo Cognome non può contenere caratteri speciali o numeri.');
+      return;
+    }
 
+    const updatedProfile = {
+      ...userProfile,
+      name: name.trim() !== '' ? name.trim() : userProfile.name,
+      surname: surname.trim() !== '' ? surname.trim() : userProfile.surname,
+      nickname: nickname.trim() !== '' ? nickname.trim() : userProfile.nickname,
+      phoneNumber: phoneNumber.trim() !== '' ? phoneNumber.trim() : userProfile.phoneNumber,
+    };
+
+    try {
+      await updateProfile(updatedProfile);
+      Alert.alert('Successo', 'Profilo aggiornato con successo.');
+    } catch (error) {
+      Alert.alert('Errore', 'Si è verificato un errore durante l\'aggiornamento del profilo.');
+    }
+  };
 
   const updateSocialLink = (socialPlatform, newLink) => {
     const updatedSocialLinks = { ...userProfile.socialLinks, [socialPlatform]: newLink };
     const updatedProfile = { ...userProfile, socialLinks: updatedSocialLinks };
     updateProfile(updatedProfile);
   };
-
 
   const selectProfileImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -79,19 +73,27 @@ export default function ProfileScreen() {
       });
 
       if (!result.canceled) {
+        setLoading(true);
+
         const selectedAsset = result.assets && result.assets.length > 0 ? result.assets[0] : null;
 
         if (selectedAsset) {
-          const updatedProfile = { ...userProfile, profileImage: selectedAsset };
-          updateProfile(updatedProfile);
+          try {
+            await uploadProfileImage(selectedAsset.uri);
+            await updateProfileConfirm();
+          } catch (error) {
+            Alert.alert('Errore durante il caricamento dell\'immagine del profilo:', error.message);
+            console.error('Errore durante il caricamento dell\'immagine del profilo:', error);
+          } finally {
+            setLoading(false);
+          }
         }
       }
     } catch (error) {
+      Alert.alert('Errore durante la selezione dell\'immagine:', error.message);
       console.error('Errore durante la selezione dell\'immagine:', error);
     }
   };
-
-
 
   const handleDeleteProfile = () => {
     Alert.alert(
@@ -114,14 +116,12 @@ export default function ProfileScreen() {
     );
   };
 
-       
   const handleLogoutPress = async () => {
     setLoggingOut(true);
     await handleLogout();
     setLoggingOut(false);
     navigation.navigate('Login');
   };
-
 
   if (isLoading || loggingOut) {
     return <LoadingScreen />;
@@ -160,7 +160,6 @@ export default function ProfileScreen() {
     color: '#333',
     marginBottom: 30,
   };
-  
 
   return (
     <ScrollView contentContainerStyle={containerStyle}>
@@ -177,10 +176,14 @@ export default function ProfileScreen() {
               borderColor: '#ddd',
             }}
           >
-            <Image
-              source={userProfile?.profileImage || profileData.profileImage}
+            {loading ? (
+              <ActivityIndicator size="large" color="#0000ff" />
+            ) : (
+              <Image
+              source={{ uri: userProfile?.profileImage || profileData.profileImage }}
               style={{ width: '100%', height: '100%', borderRadius: 60 }}
-            />
+              />
+            )}
           </View>
         </TouchableOpacity>
 
@@ -209,58 +212,50 @@ export default function ProfileScreen() {
         </View>
 
         <View style={inputContainerStyle}>
-        <Text style={{ fontSize: 18, color: 'black', marginBottom: 10 }}>Dati Personali:</Text>
-        
-        
-        <TextInputWithLabel
-          label="Nome"
-          placeholder={userProfile?.name || ''}
-          onChangeText={(text) => setName(text)}
-          style={inputStyle}
-        />
+          <Text style={{ fontSize: 18, color: 'black', marginBottom: 10 }}>Dati Personali:</Text>
 
+          <TextInputWithLabel
+            label="Nome"
+            placeholder={userProfile?.name || ''}
+            onChangeText={(text) => setName(text)}
+            style={inputStyle}
+          />
 
-        <TextInputWithLabel
-          label="Cognome"
-          placeholder={userProfile?.surname || ''}
-          onChangeText={(text) => setSurname(text)}
-          style={inputStyle}
-        />
+          <TextInputWithLabel
+            label="Cognome"
+            placeholder={userProfile?.surname || ''}
+            onChangeText={(text) => setSurname(text)}
+            style={inputStyle}
+          />
 
-        
-        <TextInputWithLabel
-          label="Nickname"
-          placeholder={userProfile?.nickname || ''}
-          onChangeText={(text) => setNickname(text)}
-          style={inputStyle}
-        />
+          <TextInputWithLabel
+            label="Nickname"
+            placeholder={userProfile?.nickname || ''}
+            onChangeText={(text) => setNickname(text)}
+            style={inputStyle}
+          />
 
-
-        <TextInputWithLabel
-          label="Telefono"
-          placeholder={userProfile?.phoneNumber || ''}
-          onChangeText={(text) => setPhoneNumber(text)}
-          style={inputStyle}
-        />
+          <TextInputWithLabel
+            label="Telefono"
+            placeholder={userProfile?.phoneNumber || ''}
+            onChangeText={(text) => setPhoneNumber(text)}
+            style={inputStyle}
+          />
         </View>
 
-        
         <View style={styles.buttonsContainer}>
-        <TouchableOpacity style={[styles.button, { backgroundColor: 'green' }]} onPress={updateProfileConfirm}>
-          <Text style={styles.buttonText}>Salva Modifiche</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={[styles.button, { backgroundColor: 'green' }]} onPress={updateProfileConfirm}>
+            <Text style={styles.buttonText}>Salva Modifiche</Text>
+          </TouchableOpacity>
 
+          <TouchableOpacity style={[styles.button, { backgroundColor: 'blue' }]} onPress={handleLogoutPress}>
+            <Text style={styles.buttonText}>Esci</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.button, { backgroundColor: 'blue' }]} onPress={handleLogoutPress}>
-          <Text style={styles.buttonText}>Esci</Text>
-        </TouchableOpacity>
-        
-
-
-        <TouchableOpacity style={[styles.button, { backgroundColor: 'red' }]} onPress={handleDeleteProfile}>
-          <Text style={styles.buttonText}>Elimina Profilo</Text>
-        </TouchableOpacity>
-       </View>
+          <TouchableOpacity style={[styles.button, { backgroundColor: 'red' }]} onPress={handleDeleteProfile}>
+            <Text style={styles.buttonText}>Elimina Profilo</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );

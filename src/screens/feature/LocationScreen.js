@@ -74,28 +74,38 @@ export default function LocationScreen() {
     return <LoadingScreen />;
   }
 
-  const filtraPeople = () => {
-    const peopleFiltrati = people.filter((person) => {
-      const distanzaTraPersonEPosizione = calcolaDistanzaTraCoordinate(
-        location.coords.latitude,
-        location.coords.longitude,
-        person.latitude,
-        person.longitude
-      );
-
-      return distanzaTraPersonEPosizione <= distanza;
-    });
-
-    setPeopleVisualizzati(peopleFiltrati);
-
-    const newMapSize = calculateMapSize(location.coords.latitude, location.coords.longitude, distanza);
-
-    mapRef.current.animateToRegion({
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-      ...newMapSize,
-    });
+  const filtraPeople = async () => {
+    try {
+      const allUsersData = await getUsersData();
+      const peopleFiltrati = allUsersData.filter((user) => {
+        if (user.latitude && user.longitude) {
+          const distanzaTraPersonEPosizione = calcolaDistanzaTraCoordinate(
+            location.coords.latitude,
+            location.coords.longitude,
+            user.latitude,
+            user.longitude
+          );
+  
+          return distanzaTraPersonEPosizione <= distanza;
+        }
+        return false;
+      });
+  
+      setPeopleVisualizzati(peopleFiltrati);
+  
+      const newMapSize = calculateMapSize(location.coords.latitude, location.coords.longitude, distanza);
+  
+      mapRef.current.animateToRegion({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        ...newMapSize,
+      });
+    } catch (error) {
+      console.error('Errore durante il recupero dei dati utente:', error);
+      // Gestisci l'errore a seconda delle tue esigenze
+    }
   };
+  
 
   const calculateMapSize = (latitude, longitude, distanza) => {
     const aspectRatio = 1;
@@ -151,28 +161,40 @@ export default function LocationScreen() {
           />
         )}
 
-        {peopleVisualizzati.map((person) => (
-          <Marker
-            key={person.id}
-            coordinate={{
-              latitude: person.latitude,
-              longitude: person.longitude,
-            }}
-            title={person.name}
-            description={`Posizione di ${person.name}`}
-          >
-            <Image
-              source={person.imageUrl}
-              style={{
-                width: 35,
-                height: 35,
-                borderRadius: 20,
-                borderColor: 'red',
-                borderWidth: 2,
-              }}
-            />
-          </Marker>
-        ))}
+       
+{peopleVisualizzati.map((person) => {
+  // Aggiungi controlli per assicurarti che latitude e longitude siano numeri
+  const latitude = parseFloat(person.latitude);
+  const longitude = parseFloat(person.longitude);
+
+  if (isNaN(latitude) || isNaN(longitude)) {
+    // Se latitude o longitude non sono numeri validi, salta questo Marker
+    return null;
+  }
+
+  return (
+    <Marker
+      key={person.id}
+      coordinate={{
+        latitude,
+        longitude,
+      }}
+      title={person.name}
+      description={`Posizione di ${person.name}`}
+    >
+      <Image
+        source={person.imageUrl}
+        style={{
+          width: 35,
+          height: 35,
+          borderRadius: 20,
+          borderColor: 'red',
+          borderWidth: 2,
+        }}
+      />
+    </Marker>
+  );
+})}
 
         {location && (
           <Circle

@@ -137,11 +137,13 @@ const UseAuthentication = () => {
 
 
 
-  const getUsersData = async () => {
+   // Funzione per ottenere i dati di tutti gli utenti
+   const getUsersData = async () => {
     try {
       const db = getFirestore();
       const usersCollection = collection(db, 'users');
       const usersSnapshot = await getDocs(usersCollection);
+
       return usersSnapshot.docs.map((doc) => doc.data());
     } catch (error) {
       console.error('Error getting users data:', error);
@@ -158,28 +160,28 @@ const UseAuthentication = () => {
       const storageRef = ref(storage, `profile_images/${uid}`);
       const response = await fetch(imageUri);
       const blob = await response.blob();
-
+  
       await uploadBytes(storageRef, blob);
       const downloadURL = await getDownloadURL(storageRef);
-
+  
       // Aggiorna l'URL dell'immagine del profilo nel documento dell'utente
       const db = getFirestore();
       const userDocRef = doc(db, 'users', uid);
       await updateDoc(userDocRef, { profileImage: downloadURL });
-
+  
       // Aggiorna lo stato locale dell'utente con l'URL dell'immagine del profilo
       setUserProfile((prevUserProfile) => ({
         ...prevUserProfile,
         profileImage: downloadURL,
       }));
-
+  
       console.log('Immagine del profilo caricata con successo.');
     } catch (error) {
       console.error('Errore durante il caricamento dell\'immagine del profilo:', error);
       throw error;
     }
   };
-
+  
 
 
   return { userProfile, isLoading, handleLogout, updateProfile, configureProfile, getUserData, getUsersData, uploadUserLocation, uploadProfileImage };
