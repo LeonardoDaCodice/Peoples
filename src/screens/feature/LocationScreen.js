@@ -3,9 +3,10 @@ import { View, Text, Image, Alert, TouchableOpacity } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
 import Slider from '@react-native-community/slider';
 import * as Location from 'expo-location';
-import LoadingScreen from '../../utils/LoadingScreen';
-import UseAuthentication from '../../utils/UseAuthentication'; // Sostituisci con il percorso corretto
-
+import LoadingScreen from '../../components/RadarScreen';
+import UseAuthentication from '../../utils/UseAuthentication';
+import DistanceSelector from '../../components/DistanceSelector';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const people = [
   { id: 1, name: 'Persona 1', latitude: 41.111, longitude: 16.8554000, imageUrl: require('./persona1.png') },
@@ -13,22 +14,42 @@ const people = [
   // Aggiungi altre persone secondo necessità
 ];
 
+const MyLocationButton = ({ onPress }) => (
+  <TouchableOpacity
+    onPress={onPress}
+    style={{
+      position: 'absolute',
+      top: 16,
+      right: 16,
+      zIndex: 2,
+    }}
+  >
+    <LinearGradient
+      colors={['#000000', '#004d00']}
+      style={{
+        padding: 10,
+        borderRadius: 10,
+      }}
+    >
+      <Text style={{ color: 'white' }}>Vai alla tua posizione</Text>
+    </LinearGradient>
+  </TouchableOpacity>
+);
+
 export default function LocationScreen() {
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [distanza, setDistanza] = useState(1);
+  const [distanza, setDistanza] = useState(0.05);//Imposta la distanza iniziale
   const [peopleVisualizzati, setPeopleVisualizzati] = useState([]);
   const mapRef = useRef(null);
 
   const { uploadUserLocation, getUsersData } = UseAuthentication();
-
 
   useEffect(() => {
     (async () => {
       const { status } = await Location.getForegroundPermissionsAsync();
 
       if (status !== 'granted') {
-        // I permessi non sono stati concessi
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
           setErrorMsg('Permission to access location was denied');
@@ -44,7 +65,6 @@ export default function LocationScreen() {
       try {
         let location = await Location.getCurrentPositionAsync({});
         setLocation(location);
-        setPeopleVisualizzati(people);
 
         // Aggiorna la posizione dell'utente nel documento dell'utente
         uploadUserLocation(location.coords.latitude, location.coords.longitude);
@@ -85,16 +105,16 @@ export default function LocationScreen() {
             user.latitude,
             user.longitude
           );
-  
+
           return distanzaTraPersonEPosizione <= distanza;
         }
         return false;
       });
-  
+
       setPeopleVisualizzati(peopleFiltrati);
-  
+
       const newMapSize = calculateMapSize(location.coords.latitude, location.coords.longitude, distanza);
-  
+
       mapRef.current.animateToRegion({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
@@ -105,7 +125,6 @@ export default function LocationScreen() {
       // Gestisci l'errore a seconda delle tue esigenze
     }
   };
-  
 
   const calculateMapSize = (latitude, longitude, distanza) => {
     const aspectRatio = 1;
@@ -161,40 +180,50 @@ export default function LocationScreen() {
           />
         )}
 
-       
-{peopleVisualizzati.map((person) => {
-  // Aggiungi controlli per assicurarti che latitude e longitude siano numeri
-  const latitude = parseFloat(person.latitude);
-  const longitude = parseFloat(person.longitude);
+        {peopleVisualizzati.map((person) => {
+          const latitude = parseFloat(person.latitude);
+          const longitude = parseFloat(person.longitude);
 
-  if (isNaN(latitude) || isNaN(longitude)) {
-    // Se latitude o longitude non sono numeri validi, salta questo Marker
-    return null;
-  }
+          if (isNaN(latitude) || isNaN(longitude)) {
+            return null;
+          }
 
-  return (
-    <Marker
-      key={person.id}
-      coordinate={{
-        latitude,
-        longitude,
-      }}
-      title={person.name}
-      description={`Posizione di ${person.name}`}
-    >
-      <Image
-        source={person.imageUrl}
-        style={{
-          width: 35,
-          height: 35,
-          borderRadius: 20,
-          borderColor: 'red',
-          borderWidth: 2,
-        }}
-      />
-    </Marker>
-  );
-})}
+          return (
+            <Marker
+              key={person.id}
+              coordinate={{
+                latitude,
+                longitude,
+              }}
+              title={person.name}
+              description={`Posizione di ${person.name}`}
+            >
+              {person.profileImage ? (
+                <Image
+                  source={{ uri: person.profileImage }}
+                  style={{
+                    width: 35,
+                    height: 35,
+                    borderRadius: 20,
+                    borderColor: 'red',
+                    borderWidth: 2,
+                  }}
+                />
+              ) : (
+                <Image
+                  source={require('../../assets/default-profile-image.png')}
+                  style={{
+                    width: 35,
+                    height: 35,
+                    borderRadius: 20,
+                    borderColor: 'red',
+                    borderWidth: 2,
+                  }}
+                />
+              )}
+            </Marker>
+          );
+        })}
 
         {location && (
           <Circle
@@ -209,15 +238,8 @@ export default function LocationScreen() {
         )}
       </MapView>
 
-      <TouchableOpacity
-        style={{
-          position: 'absolute',
-          top: 16,
-          right: 16,
-          backgroundColor: 'green',
-          padding: 10,
-          borderRadius: 10,
-        }}
+      {/* Bottone "Vai alla tua posizione" */}
+      <MyLocationButton
         onPress={() => {
           if (location) {
             mapRef.current.animateToRegion({
@@ -228,30 +250,14 @@ export default function LocationScreen() {
             });
           }
         }}
-      >
-        <Text style={{ color: 'white' }}>Vai alla tua posizione</Text>
-      </TouchableOpacity>
+      />
 
-      <View style={{ position: 'absolute', bottom: 16, alignSelf: 'center' }}>
-        <View style={{ backgroundColor: 'white', padding: 10, borderRadius: 10 }}>
-          <View style={{ marginTop: 10, marginBottom: 5, flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={{ color: 'black' }}>Distanza selezionata: </Text>
-            <Text style={{ color: 'green', fontWeight: 'bold' }}>{distanza.toFixed(2)} km</Text>
-          </View>
-
-          <Slider
-            style={{ width: 300, height: 40 }}
-            minimumValue={0.05}
-            maximumValue={0.25}
-            step={0.05}
-            value={distanza}
-            minimumTrackTintColor="green"
-            thumbTintColor="green"
-            onValueChange={(value) => setDistanza(value)}
-            onSlidingComplete={filtraPeople}
-          />
-        </View>
-      </View>
+      {/* Componente DistanceSelector */}
+      <DistanceSelector
+        distanza={distanza}
+        setDistanza={setDistanza}
+        filtraPeople={filtraPeople}
+      />
     </View>
   );
 }

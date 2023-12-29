@@ -4,6 +4,7 @@ import { doc, setDoc, getFirestore } from 'firebase/firestore';
 import { auth } from '../../../config/firebase'; // Assicurati di utilizzare il percorso corretto
 import { useNavigation } from '@react-navigation/native';
 import UseAuthentication from '../../utils/UseAuthentication';
+import { LinearGradient } from 'expo-linear-gradient';
 
 
 export default function ConfigureProfileScreen() {
@@ -80,8 +81,14 @@ export default function ConfigureProfileScreen() {
         onChangeText={(text) => setPhoneNumber(text)}
         value={phoneNumber}
       />
-      <TouchableOpacity style={styles.button} onPress={handleProfileConfiguration}>
-        <Text style={styles.buttonText}>Avanti</Text>
+      {/* Bottone "Avanti" con gradiente */}
+      <TouchableOpacity style={styles.gradientButton} onPress={handleProfileConfiguration}>
+        <LinearGradient
+          colors={['#009900', '#004d00']}
+          style={styles.button}
+        >
+          <Text style={styles.buttonText}>Avanti</Text>
+        </LinearGradient>
       </TouchableOpacity>
     </View>
   );
@@ -89,34 +96,40 @@ export default function ConfigureProfileScreen() {
 
 
 const styles = StyleSheet.create({
- container: {
+  container: {
     flex: 1,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
- },
- title: {
+  },
+  title: {
     fontSize: 24,
     marginBottom: 20,
- },
- input: {
+  },
+  input: {
     width: '80%',
     borderColor: 'gray',
     borderWidth: 1,
     borderRadius: 5,
     padding: 10,
     marginBottom: 10,
- },
- button: {
-    width: '80%',
-    backgroundColor: 'green',
+  },
+  button: {
     padding: 10,
-    borderRadius: 5,
-    //marginTop: 20,
- },
- buttonText: {
+    borderRadius: 10,
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  buttonText: {
     color: '#fff',
     fontSize: 18,
     textAlign: 'center',
- },
+  },
+  gradientButton: {
+    width: '80%',
+    borderRadius: 5,
+    overflow: 'hidden',
+    marginTop: 10,
+    alignSelf: 'center', // Centra il bottone
+  },
 });

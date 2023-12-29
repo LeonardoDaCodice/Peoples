@@ -10,6 +10,7 @@ import {
   fetchSignInMethodsForEmail,
   onAuthStateChanged,
 } from 'firebase/auth';
+import { LinearGradient } from 'expo-linear-gradient'; // Importa il componente LinearGradient
 
 import { getFirestore, doc, getDoc, collection, addDoc, setDoc } from 'firebase/firestore';
 
@@ -242,13 +243,23 @@ export default function EmailLoginScreen() {
               />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.button} onPress={handleRegistrationSubmit}>
+          <TouchableOpacity style={styles.gradientButton} onPress={handleRegistration}>
+          <LinearGradient
+            colors={['#009900', '#004d00']}
+            style={styles.button}
+          >
             <Text style={styles.buttonText}>Registra</Text>
-          </TouchableOpacity>
+          </LinearGradient>
+        </TouchableOpacity>
         </>
       ) : (
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Accedi</Text>
+        <TouchableOpacity style={styles.gradientButton} onPress={handleLogin}>
+          <LinearGradient
+            colors={['#009900', '#004d00']}
+            style={styles.button}
+          >
+            <Text style={styles.buttonText}>Accedi</Text>
+          </LinearGradient>
         </TouchableOpacity>
       )}
 
@@ -289,13 +300,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   button: {
-    width: '80%',
-    backgroundColor: 'green',
     padding: 10,
-    borderRadius: 5,
-    //marginTop: 20,
+    borderRadius: 10,
     marginBottom: 30,
- },
+    alignItems: 'center',
+  },
  buttonText: {
     color: '#fff',
     fontSize: 18,
@@ -330,5 +339,10 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     padding: 10,
+  },
+  gradientButton: {
+    width: '80%',
+    borderRadius: 5,
+    overflow: 'hidden',
   },
 });

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 //import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 
 
 export default function LoginScreen() {
@@ -47,16 +48,31 @@ export default function LoginScreen() {
       <Text style={styles.text}>Accedi con le seguenti opzioni:</Text>
 
       <View style={styles.buttonsContainer}>
-        <TouchableOpacity style={[styles.button, { backgroundColor: 'green' }]} onPress={handleGoogleLogin}>
-          <Text style={styles.buttonText}>Accedi con Google</Text>
+      <TouchableOpacity  onPress={handleGoogleLogin}>
+          <LinearGradient
+            colors={['#009900', '#004d00']}
+            style={[styles.button, { backgroundColor: 'green' }]}
+          >
+            <Text style={styles.buttonText}>Accedi con Google</Text>
+          </LinearGradient>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.button, { backgroundColor: 'blue' }]} onPress={handleEmailLogin}>
-          <Text style={styles.buttonText}>Accedi con l'email</Text>
+        <TouchableOpacity  onPress={handleEmailLogin}>
+          <LinearGradient
+            colors={['#0000ff', '#000080']}
+            style={[styles.button, { backgroundColor: 'blue' }]}
+          >
+            <Text style={styles.buttonText}>Accedi con l'email</Text>
+          </LinearGradient>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.button, { backgroundColor: 'grey' }]} onPress={handlePhoneLogin}>
-          <Text style={styles.buttonText}>Accedi con il numero di telefono</Text>
+        <TouchableOpacity onPress={handlePhoneLogin}>
+          <LinearGradient
+            colors={['#808080', '#555555']}
+            style={[styles.button, { backgroundColor: 'grey' }]}
+          >
+            <Text style={styles.buttonText}>Accedi con il numero di telefono</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 

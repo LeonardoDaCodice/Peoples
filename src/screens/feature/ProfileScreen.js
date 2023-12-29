@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Image, TouchableOpacity, Alert, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import UseAuthentication from '../../utils/UseAuthentication';
-import LoadingScreen from '../../utils/LoadingScreen';
+import LoadingScreen from '../../components/LoadingScreen';
 import { useNavigation } from '@react-navigation/native';
+import { AntDesign } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient'; // Aggiungi questo import
+
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
   const { userProfile, isLoading, handleLogout, updateProfile, uploadProfileImage } = UseAuthentication();
   const [profileData, setProfileData] = useState({
-    profileImage: require('./default-profile-image.png'),
+    profileImage: require('../../assets/default-profile-image.png'),
   });
   const [name, setName] = useState('');
   const [surname, setSurname] = useState('');
@@ -165,26 +168,38 @@ export default function ProfileScreen() {
     <ScrollView contentContainerStyle={containerStyle}>
       <View style={containerStyle}>
         <TouchableOpacity onPress={selectProfileImage}>
-          <View
-            style={{
-              width: 120,
-              height: 120,
-              borderRadius: 60,
-              overflow: 'hidden',
-              marginBottom: 20,
-              borderWidth: 2,
-              borderColor: '#ddd',
-            }}
-          >
-            {loading ? (
-              <ActivityIndicator size="large" color="#0000ff" />
-            ) : (
-              <Image
-              source={{ uri: userProfile?.profileImage || profileData.profileImage }}
+        <View style={{ position: 'relative' }}>
+        <View
+          style={{
+            width: 120,
+            height: 120,
+            borderRadius: 60,
+            overflow: 'hidden',
+            marginBottom: 20,
+            borderWidth: 2,
+            borderColor: '#ddd',
+          }}
+        >
+          {loading ? (
+            <ActivityIndicator size="large" color="#166020" />
+          ) : (
+            <Image
+              source={userProfile?.profileImage ? { uri: userProfile.profileImage } : profileData.profileImage}
               style={{ width: '100%', height: '100%', borderRadius: 60 }}
-              />
-            )}
-          </View>
+            />
+          )}
+
+          {/* Aggiunta della condizione per mostrare/nascondere l'icona della macchina fotografica */}
+          {(!userProfile?.profileImage || loading) && (
+            <View style={{ position: 'absolute', top: '50%', left: '50%', transform: [{ translateX: -12 }, { translateY: -12 }] }}>
+              <TouchableOpacity onPress={selectProfileImage}>
+                <AntDesign name="camera" size={25} color="black" />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </View>
+
         </TouchableOpacity>
 
         <Text style={headerTextStyle}>Il tuo Profilo</Text>
@@ -244,16 +259,31 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.buttonsContainer}>
-          <TouchableOpacity style={[styles.button, { backgroundColor: 'green' }]} onPress={updateProfileConfirm}>
-            <Text style={styles.buttonText}>Salva Modifiche</Text>
+        <TouchableOpacity onPress={updateProfileConfirm}>
+            <LinearGradient
+              colors={['#009900', '#004d00']}
+              style={[styles.button, { backgroundColor: 'green' }]}
+            >
+              <Text style={styles.buttonText}>Salva Modifiche</Text>
+            </LinearGradient>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.button, { backgroundColor: 'blue' }]} onPress={handleLogoutPress}>
-            <Text style={styles.buttonText}>Esci</Text>
+          <TouchableOpacity style={styles.gradientButton} onPress={handleLogoutPress}>
+            <LinearGradient
+              colors={['#0000ff', '#000080']}
+              style={[styles.button, { backgroundColor: 'blue' }]}
+            >
+              <Text style={styles.buttonText}>Esci</Text>
+            </LinearGradient>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.button, { backgroundColor: 'red' }]} onPress={handleDeleteProfile}>
-            <Text style={styles.buttonText}>Elimina Profilo</Text>
+          <TouchableOpacity style={styles.gradientButton} onPress={handleDeleteProfile}>
+            <LinearGradient
+              colors={['#ff0000', '#8b0000']}
+              style={[styles.button, { backgroundColor: 'red' }]}
+            >
+              <Text style={styles.buttonText}>Elimina Profilo</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </View>

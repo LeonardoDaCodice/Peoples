@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Card, Image } from 'react-native-elements';
 import useAuthentication from '../utils/UseAuthentication';
-import LoadingScreen from '../utils/LoadingScreen';
+import LoadingScreen from '../components/RadarScreen';
+import DistanceSelector from '../components/DistanceSelector';
 
 export default function HomeScreen({ navigation }) {
   const { isLoading, user, getUserData } = useAuthentication();
@@ -10,6 +11,7 @@ export default function HomeScreen({ navigation }) {
   const [usersData, setUsersData] = useState([]);
   const [flippedCards, setFlippedCards] = useState([]);
   const flipAnimations = useRef({}).current;
+  const [distanza, setDistanza] = useState(0.05);//Imposta la distanza iniziale
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -48,23 +50,23 @@ export default function HomeScreen({ navigation }) {
   const handleCardPress = (cardId) => {
     setFlippedCards((prevFlippedCards) => {
       const isFlipped = prevFlippedCards.includes(cardId);
-  
+
       // Inverti il valore di flip
       const newFlippedCards = isFlipped
         ? prevFlippedCards.filter((id) => id !== cardId)
         : [...prevFlippedCards, cardId];
-  
+
       // Avvia l'animazione di flip
       Animated.timing(flipAnimations[cardId], {
         toValue: newFlippedCards.includes(cardId) ? 1 : 0,
         duration: 500,
         useNativeDriver: true,
       }).start();
-  
+
       return newFlippedCards;
     });
   };
-  
+
   const resetFlip = () => {
     setFlippedCards([]);
 
@@ -81,54 +83,63 @@ export default function HomeScreen({ navigation }) {
     return <LoadingScreen />;
   }
 
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.welcomeText}>Welcome, {userNickname || 'Guest'}!</Text>
-      <View style={styles.cardsContainer}>
-        {usersData.map((user) => {
-          if (!flipAnimations[user.id]) {
-            flipAnimations[user.id] = new Animated.Value(0);
-          }
+  const handleDistanceChange = (value) => {
+    setDistanza(value);
+    // Add logic for distance-based filtering here
+  };
 
-          return (
-            <TouchableOpacity key={user.id} onPress={() => handleCardPress(user.id)}>
-              <Animated.View
-                style={[
-                  flippedCards.includes(user.id) && { zIndex: 1 },
-                  {
-                    transform: [
-                      {
-                        rotateY: flipAnimations[user.id].interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ['0deg', '180deg'],
-                        }),
-                      },
-                    ],
-                  },
-                ]}
-              >
-                <Card containerStyle={styles.card}>
-                  <Image source={{ uri: user.profileImage }} style={styles.userImage} />
-                  <View style={styles.userNameContainer}>
-                    <Text numberOfLines={1} ellipsizeMode="tail" style={styles.userName}>
-                      {user.nickname}
-                    </Text>
-                  </View>
-                </Card>
-              </Animated.View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-      {/* Altre componenti dell'app */}
-    </ScrollView>
+  return (
+    <View style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        <Text style={styles.welcomeText}>Welcome, {userNickname || 'Guest'}!</Text>
+        <View style={styles.cardsContainer}>
+          {usersData.map((user) => {
+            if (!flipAnimations[user.id]) {
+              flipAnimations[user.id] = new Animated.Value(0);
+            }
+
+            return (
+              <TouchableOpacity key={user.id} onPress={() => handleCardPress(user.id)}>
+                <Animated.View
+                  style={[
+                    flippedCards.includes(user.id) && { zIndex: 1 },
+                    {
+                      transform: [
+                        {
+                          rotateY: flipAnimations[user.id].interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ['0deg', '180deg'],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  <Card containerStyle={styles.card}>
+                    <Image source={{ uri: user.profileImage }} style={styles.userImage} />
+                    <View style={styles.userNameContainer}>
+                      <Text numberOfLines={1} ellipsizeMode="tail" style={styles.userName}>
+                        {user.nickname}
+                      </Text>
+                    </View>
+                  </Card>
+                </Animated.View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        {/* Altre componenti dell'app */}
+      </ScrollView>
+      <DistanceSelector distanza={distanza} setDistanza={handleDistanceChange} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollViewContent: {
     alignItems: 'center',
     padding: 20,
+    paddingBottom: 100, // Adjust as needed based on the DistanceSelector height
   },
   welcomeText: {
     fontSize: 24,
