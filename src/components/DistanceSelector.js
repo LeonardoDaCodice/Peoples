@@ -12,18 +12,18 @@ const DistanceSelector = ({ distanza, setDistanza, filtraPeople }) => {
         position: 'absolute',
         bottom: 16,
         alignSelf: 'center',
-        padding: 10,
+        padding: 7,
         borderRadius: 10,
       }}
     >
       <View>
-        <View style={{ marginTop: 2, marginBottom: 15, flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ marginTop: 2, flexDirection: 'row', alignItems: 'center' }}>
           <Text style={{ color: 'white' }}>Distanza selezionata: </Text>
           <Text style={{ color: 'white', fontWeight: 'bold' }}>{distanza.toFixed(2)} km</Text>
         </View>
 
         <Slider
-          style={{ width: 190, height: 10 }}
+          style={{ width: 190, height: 50 }}
           minimumValue={0.05}
           maximumValue={0.25}
           step={0.05}

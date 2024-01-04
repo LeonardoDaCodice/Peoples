@@ -1,17 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated, Alert, Linking } from 'react-native';
 import { Card, Image } from 'react-native-elements';
-import useAuthentication from '../utils/UseAuthentication';
+import UseAuthentication from '../utils/UseAuthentication';
 import LoadingScreen from '../components/RadarScreen';
 import DistanceSelector from '../components/DistanceSelector';
+import { LocationUtils } from '../utils/LocationUtils';
+import * as Location from 'expo-location';
 
 export default function HomeScreen({ navigation }) {
-  const { isLoading, user, getUserData } = useAuthentication();
+  const { isLoading, user, getUserData, getUsersData } = UseAuthentication();
   const [userNickname, setUserNickname] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
   const [usersData, setUsersData] = useState([]);
   const [flippedCards, setFlippedCards] = useState([]);
   const flipAnimations = useRef({}).current;
-  const [distanza, setDistanza] = useState(0.05);//Imposta la distanza iniziale
+  const [distanza, setDistanza] = useState(0.25);
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -29,23 +33,55 @@ export default function HomeScreen({ navigation }) {
   }, [getUserData]);
 
   useEffect(() => {
+    const fetchUserLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+
+        if (status !== 'granted') {
+          Alert.alert(
+            'Attenzione',
+            'Per utilizzare questa funzionalità, devi accettare i permessi di geolocalizzazione.',
+            [
+              { text: 'OK', onPress: () => console.log('OK Pressed') },
+              {
+                text: 'Apri impostazioni',
+                onPress: () => {
+                  // Apre le impostazioni dell'applicazione per consentire all'utente di abilitare i permessi
+                  Linking.openSettings();
+                },
+              },
+            ]
+          );
+          return;
+        }
+
+        setHasLocationPermission(true);
+
+        const location = await Location.getCurrentPositionAsync({});
+        setUserLocation(location);
+
+        // Resto del tuo codice per animare la mappa
+      } catch (error) {
+        console.error('Error getting location:', error);
+      }
+    };
+
+    fetchUserLocation();
+  }, []);
+
+  useEffect(() => {
     const fetchUsersData = async () => {
       try {
-        const exampleUsersData = [
-          { id: '1', nickname: 'Salvatore Forte', profileImage: 'https://example.com/user1.jpg' },
-          { id: '2', nickname: 'User2', profileImage: 'https://example.com/user2.jpg' },
-          { id: '3', nickname: 'User3', profileImage: 'https://example.com/user3.jpg' },
-          // Aggiungi altri utenti secondo necessità
-        ];
-
-        setUsersData(exampleUsersData);
+        const allUsersData = await getUsersData();
+        const filteredUsers = LocationUtils.filterPeopleByDistance(allUsersData, userLocation, distanza);
+        setUsersData(filteredUsers);
       } catch (error) {
         console.error('Errore durante il recupero dei dati utenti:', error);
       }
     };
 
     fetchUsersData();
-  }, []);
+  }, [userLocation, distanza]);
 
   const handleCardPress = (cardId) => {
     setFlippedCards((prevFlippedCards) => {
@@ -79,34 +115,50 @@ export default function HomeScreen({ navigation }) {
     });
   };
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
   const handleDistanceChange = (value) => {
     setDistanza(value);
     // Add logic for distance-based filtering here
   };
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  if (!hasLocationPermission) {
+    // Mostra un messaggio diverso o un componente per richiedere il permesso
+    return (
+      <View style={styles.permissionDeniedContainer}>
+        <Text style={styles.permissionDeniedText}>
+          Per utilizzare questa funzionalità, devi concedere i permessi di geolocalizzazione.
+        </Text>
+        <TouchableOpacity onPress={() => Linking.openSettings()}>
+          <Text style={styles.openSettingsText}>Apri impostazioni</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
         <Text style={styles.welcomeText}>Welcome, {userNickname || 'Guest'}!</Text>
         <View style={styles.cardsContainer}>
-          {usersData.map((user) => {
-            if (!flipAnimations[user.id]) {
-              flipAnimations[user.id] = new Animated.Value(0);
+          {usersData.map((user, index) => {
+            const cardId = user.uid || index; // Utilizza user.uid se disponibile, altrimenti usa l'indice
+
+            if (!flipAnimations[cardId]) {
+              flipAnimations[cardId] = new Animated.Value(0);
             }
 
             return (
-              <TouchableOpacity key={user.id} onPress={() => handleCardPress(user.id)}>
+              <TouchableOpacity key={cardId} onPress={() => handleCardPress(cardId)}>
                 <Animated.View
                   style={[
-                    flippedCards.includes(user.id) && { zIndex: 1 },
+                    flippedCards.includes(cardId) && { zIndex: 1 },
                     {
                       transform: [
                         {
-                          rotateY: flipAnimations[user.id].interpolate({
+                          rotateY: flipAnimations[cardId].interpolate({
                             inputRange: [0, 1],
                             outputRange: ['0deg', '180deg'],
                           }),
@@ -116,7 +168,14 @@ export default function HomeScreen({ navigation }) {
                   ]}
                 >
                   <Card containerStyle={styles.card}>
-                    <Image source={{ uri: user.profileImage }} style={styles.userImage} />
+                    {user.profileImage ? (
+                      <Image source={{ uri: user.profileImage }} style={styles.userImage} />
+                    ) : (
+                      <Image
+                        source={require('../assets/default-profile-image.png')}
+                        style={styles.userImage}
+                      />
+                    )}
                     <View style={styles.userNameContainer}>
                       <Text numberOfLines={1} ellipsizeMode="tail" style={styles.userName}>
                         {user.nickname}
@@ -171,5 +230,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  permissionDeniedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  permissionDeniedText: {
+    fontSize: 15,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  openSettingsText: {
+    color: 'blue',
+    fontSize: 16,
+    textDecorationLine: 'underline',
   },
 });

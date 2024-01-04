@@ -1,18 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Image, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, Image, Alert, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
-import Slider from '@react-native-community/slider';
 import * as Location from 'expo-location';
 import LoadingScreen from '../../components/RadarScreen';
 import UseAuthentication from '../../utils/UseAuthentication';
 import DistanceSelector from '../../components/DistanceSelector';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const people = [
-  { id: 1, name: 'Persona 1', latitude: 41.111, longitude: 16.8554000, imageUrl: require('./persona1.png') },
-  { id: 2, name: 'Persona 2', latitude: 37.789, longitude: -122.431, imageUrl: require('./persona1.png') },
-  // Aggiungi altre persone secondo necessità
-];
 
 const MyLocationButton = ({ onPress }) => (
   <TouchableOpacity
@@ -39,48 +32,86 @@ const MyLocationButton = ({ onPress }) => (
 export default function LocationScreen() {
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [distanza, setDistanza] = useState(0.05);//Imposta la distanza iniziale
+  const [distanza, setDistanza] = useState(0.25);
   const [peopleVisualizzati, setPeopleVisualizzati] = useState([]);
   const mapRef = useRef(null);
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
 
   const { uploadUserLocation, getUsersData } = UseAuthentication();
 
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.getForegroundPermissionsAsync();
+    let isMounted = true;
 
-      if (status !== 'granted') {
-        let { status } = await Location.requestForegroundPermissionsAsync();
+    const updateLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+
         if (status !== 'granted') {
-          setErrorMsg('Permission to access location was denied');
           Alert.alert(
             'Attenzione',
             'Per utilizzare questa funzionalità, devi accettare i permessi di geolocalizzazione.',
-            [{ text: 'OK', onPress: () => console.log('OK Pressed') }]
+            [
+              { text: 'OK', onPress: () => console.log('OK Pressed') },
+              {
+                text: 'Apri impostazioni',
+                onPress: () => {
+                  // Apre le impostazioni dell'applicazione per consentire all'utente di abilitare i permessi
+                  Linking.openSettings();
+                },
+              },
+            ]
           );
           return;
         }
-      }
 
-      try {
-        let location = await Location.getCurrentPositionAsync({});
-        setLocation(location);
+        setHasLocationPermission(true);
 
-        // Aggiorna la posizione dell'utente nel documento dell'utente
-        uploadUserLocation(location.coords.latitude, location.coords.longitude);
+        const locationListener = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.High,
+            timeInterval: 5000,
+          },
+          (location) => {
+            if (isMounted) {
+              setLocation(location);
+              uploadUserLocation(location.coords.latitude, location.coords.longitude);
 
-        mapRef.current.animateToRegion({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        });
+              mapRef.current.animateToRegion({
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+                latitudeDelta: 0.0922,
+                longitudeDelta: 0.0421,
+              });
+            }
+          }
+        );
+
+        return () => {
+          isMounted = false;
+          locationListener.remove();
+        };
       } catch (error) {
         console.error('Error getting location:', error);
         setErrorMsg('Error getting location');
       }
-    })();
+    };
+
+    updateLocation();
   }, []);
+
+  if (!hasLocationPermission) {
+    // Mostra un messaggio diverso o un componente per richiedere il permesso
+    return (
+      <View style={styles.permissionDeniedContainer}>
+        <Text style={styles.permissionDeniedText}>
+          Per utilizzare questa funzionalità, devi concedere i permessi di geolocalizzazione.
+        </Text>
+        <TouchableOpacity onPress={() => Linking.openSettings()}>
+          <Text style={styles.openSettingsText}>Apri impostazioni</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   if (errorMsg) {
     return (
@@ -122,7 +153,6 @@ export default function LocationScreen() {
       });
     } catch (error) {
       console.error('Errore durante il recupero dei dati utente:', error);
-      // Gestisci l'errore a seconda delle tue esigenze
     }
   };
 
@@ -190,7 +220,7 @@ export default function LocationScreen() {
 
           return (
             <Marker
-              key={person.id}
+              key={person.uid}
               coordinate={{
                 latitude,
                 longitude,
@@ -241,7 +271,7 @@ export default function LocationScreen() {
       {/* Bottone "Vai alla tua posizione" */}
       <MyLocationButton
         onPress={() => {
-          if (location) {
+          if (location && mapRef.current) {
             mapRef.current.animateToRegion({
               latitude: location.coords.latitude,
               longitude: location.coords.longitude,
@@ -261,3 +291,21 @@ export default function LocationScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  permissionDeniedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  permissionDeniedText: {
+    fontSize: 15,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  openSettingsText: {
+    color: 'blue',
+    fontSize: 16,
+    textDecorationLine: 'underline',
+  },
+});
