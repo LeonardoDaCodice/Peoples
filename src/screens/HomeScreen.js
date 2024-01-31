@@ -1,87 +1,41 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated, Alert, Linking } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Card, Image } from 'react-native-elements';
 import UseAuthentication from '../utils/UseAuthentication';
-import LoadingScreen from '../components/RadarScreen';
-import DistanceSelector from '../components/DistanceSelector';
-import { LocationUtils } from '../utils/LocationUtils';
-import * as Location from 'expo-location';
+import LoadingScreen from '../components/LoadingScreen';
+import Icon from 'react-native-vector-icons/FontAwesome';
+
 
 export default function HomeScreen({ navigation }) {
-  const { isLoading, user, getUserData, getUsersData } = UseAuthentication();
+  const { isLoading, user, getUserData, getUsersData, getFriendsData } = UseAuthentication();
   const [userNickname, setUserNickname] = useState(null);
-  const [userLocation, setUserLocation] = useState(null);
   const [usersData, setUsersData] = useState([]);
   const [flippedCards, setFlippedCards] = useState([]);
   const flipAnimations = useRef({}).current;
-  const [distanza, setDistanza] = useState(0.25);
-  const [hasLocationPermission, setHasLocationPermission] = useState(false);
 
+
+  
   useEffect(() => {
     const fetchUserData = async () => {
+      console.log('Fetching user data...');
       try {
         const userData = await getUserData();
         if (userData) {
-          setUserNickname(userData.nickname);
+          const friendsData = await getFriendsData();
+          setUsersData(friendsData);
+        } else {
+          console.error('Dati utente non trovati.');
         }
       } catch (error) {
         console.error('Errore durante il recupero dei dati utente:', error);
       }
     };
-
+  
     fetchUserData();
-  }, [getUserData]);
+  }, []); // Usa un array di dipendenze vuoto per evitare il re-rendering continuo
+  
 
-  useEffect(() => {
-    const fetchUserLocation = async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-
-        if (status !== 'granted') {
-          Alert.alert(
-            'Attenzione',
-            'Per utilizzare questa funzionalità, devi accettare i permessi di geolocalizzazione.',
-            [
-              { text: 'OK', onPress: () => console.log('OK Pressed') },
-              {
-                text: 'Apri impostazioni',
-                onPress: () => {
-                  // Apre le impostazioni dell'applicazione per consentire all'utente di abilitare i permessi
-                  Linking.openSettings();
-                },
-              },
-            ]
-          );
-          return;
-        }
-
-        setHasLocationPermission(true);
-
-        const location = await Location.getCurrentPositionAsync({});
-        setUserLocation(location);
-
-        // Resto del tuo codice per animare la mappa
-      } catch (error) {
-        console.error('Error getting location:', error);
-      }
-    };
-
-    fetchUserLocation();
-  }, []);
-
-  useEffect(() => {
-    const fetchUsersData = async () => {
-      try {
-        const allUsersData = await getUsersData();
-        const filteredUsers = LocationUtils.filterPeopleByDistance(allUsersData, userLocation, distanza);
-        setUsersData(filteredUsers);
-      } catch (error) {
-        console.error('Errore durante il recupero dei dati utenti:', error);
-      }
-    };
-
-    fetchUsersData();
-  }, [userLocation, distanza]);
+  
 
   const handleCardPress = (cardId) => {
     setFlippedCards((prevFlippedCards) => {
@@ -115,27 +69,8 @@ export default function HomeScreen({ navigation }) {
     });
   };
 
-  const handleDistanceChange = (value) => {
-    setDistanza(value);
-    // Add logic for distance-based filtering here
-  };
-
   if (isLoading) {
     return <LoadingScreen />;
-  }
-
-  if (!hasLocationPermission) {
-    // Mostra un messaggio diverso o un componente per richiedere il permesso
-    return (
-      <View style={styles.permissionDeniedContainer}>
-        <Text style={styles.permissionDeniedText}>
-          Per utilizzare questa funzionalità, devi concedere i permessi di geolocalizzazione.
-        </Text>
-        <TouchableOpacity onPress={() => Linking.openSettings()}>
-          <Text style={styles.openSettingsText}>Apri impostazioni</Text>
-        </TouchableOpacity>
-      </View>
-    );
   }
 
   return (
@@ -144,7 +79,7 @@ export default function HomeScreen({ navigation }) {
         <Text style={styles.welcomeText}>Welcome, {userNickname || 'Guest'}!</Text>
         <View style={styles.cardsContainer}>
           {usersData.map((user, index) => {
-            const cardId = user.uid || index; // Utilizza user.uid se disponibile, altrimenti usa l'indice
+            const cardId = user.uid || index;
 
             if (!flipAnimations[cardId]) {
               flipAnimations[cardId] = new Animated.Value(0);
@@ -152,47 +87,90 @@ export default function HomeScreen({ navigation }) {
 
             return (
               <TouchableOpacity key={cardId} onPress={() => handleCardPress(cardId)}>
-                <Animated.View
-                  style={[
-                    flippedCards.includes(cardId) && { zIndex: 1 },
-                    {
-                      transform: [
-                        {
-                          rotateY: flipAnimations[cardId].interpolate({
-                            inputRange: [0, 1],
-                            outputRange: ['0deg', '180deg'],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                >
-                  <Card containerStyle={styles.card}>
-                    {user.profileImage ? (
-                      <Image source={{ uri: user.profileImage }} style={styles.userImage} />
-                    ) : (
-                      <Image
-                        source={require('../assets/default-profile-image.png')}
-                        style={styles.userImage}
-                      />
-                    )}
-                    <View style={styles.userNameContainer}>
-                      <Text numberOfLines={1} ellipsizeMode="tail" style={styles.userName}>
-                        {user.nickname}
-                      </Text>
-                    </View>
-                  </Card>
-                </Animated.View>
-              </TouchableOpacity>
+              <Animated.View
+                style={[
+                  styles.cardsContainer, // Applicare gli stili del contenitore della carta
+                  flippedCards.includes(cardId) && { zIndex: 1 },
+                  {
+                    transform: [
+                      {
+                        rotateY: flipAnimations[cardId].interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['0deg', '360deg'],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                <Card containerStyle={[styles.card, { height: 280 }]}>
+  {flippedCards.includes(cardId) ? (
+    // Contenuto visualizzato quando la carta è girata
+    <View style={styles.userInfoContainer}>
+      <Text style={styles.userInfoText}>Nome: {user.name}</Text>
+      <Text style={styles.userInfoText}>Cognome: {user.surname}</Text>
+      {/* Aggiungi altre informazioni desiderate */}
+      {user.socialLinks && user.socialLinks.facebook && (
+      <TouchableOpacity onPress={() => openSocialProfile(user.socialLinks.facebookProfile)}>
+        <Icon name="facebook-square" size={30} color="#3b5998" />
+      </TouchableOpacity>
+    )}
+    {user.socialLinks && user.socialLinks.instagram && (
+      <TouchableOpacity onPress={() => openSocialProfile(user.socialLinks.instagramProfile)}>
+        <Icon name="instagram" size={30} color="#833ab4" />
+      </TouchableOpacity>
+    )}
+    {user.socialLinks && user.socialLinks.twitter && (
+      <TouchableOpacity onPress={() => openSocialProfile(user.socialLinks.twitterProfile)}>
+        <Icon name="twitter" size={30} color="#1da1f2" />
+      </TouchableOpacity> 
+    )}
+    {user.socialLinks && user.socialLinks.tiktok && ( 
+      <TouchableOpacity onPress={() => openSocialProfile(user.socialLinks.tiktokProfile)}>
+        <Icon name="" size={30} color="#69c9d0" />
+      </TouchableOpacity>
+    )}
+    {user.socialLinks && user.socialLinks.onlyfans && (
+      <TouchableOpacity onPress={() => openSocialProfile(user.socialLinks.onlyfansProfile)}>
+        <Icon name="heart" size={30} color="#ff3f3f" />
+      </TouchableOpacity>
+    )} 
+    {/* Aggiungi altre icone social per gli altri profili, se necessario */}
+  </View>
+  ) : (
+    // Contenuto visualizzato quando la carta non è girata
+    <>
+      {user.profileImage ? (
+        <Image source={{ uri: user.profileImage }} style={styles.userImage} />
+      ) : (
+        <Image
+          source={require('../assets/default-profile-image.png')}
+          style={styles.userImage}
+        />
+      )}
+      <View style={styles.userNameContainer}>
+        <Text numberOfLines={1} ellipsizeMode="tail" style={styles.userName}>
+          {user.nickname}
+        </Text>
+      </View>
+    </>
+  )}
+</Card>
+
+              </Animated.View>
+            </TouchableOpacity>
+
             );
           })}
         </View>
         {/* Altre componenti dell'app */}
       </ScrollView>
-      <DistanceSelector distanza={distanza} setDistanza={handleDistanceChange} />
     </View>
   );
 }
+
+// Rimani con gli stili e il resto del codice invariato
+
 
 const styles = StyleSheet.create({
   scrollViewContent: {
@@ -211,21 +189,32 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     width: '100%',
   },
+
+
   card: {
-    flex: 1,
     borderRadius: 16,
     overflow: 'hidden',
   },
   userImage: {
     width: '100%',
-    height: 200,
+    height: 200, // Imposta un'altezza fissa per l'immagine del profilo
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },
   userNameContainer: {
     padding: 10,
     width: '100%',
+    height: 80, // Imposta un'altezza fissa per il contenitore del nome dell'utente
   },
+  userInfoContainer: {
+    padding: 10,
+  },
+  userInfoText: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+
+
   userName: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -246,4 +235,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textDecorationLine: 'underline',
   },
+  
 });

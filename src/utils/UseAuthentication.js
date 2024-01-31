@@ -117,6 +117,45 @@ const UseAuthentication = () => {
 
 
 
+
+    const getFriendsData = async () => {
+      try {
+        const userData = await getUserData();
+        if (userData) {
+          // Ottieni gli amici dell'utente loggato
+          const friendsMap = userData.friends || {};
+          const friendUids = Object.keys(friendsMap);
+    
+          // Ottieni direttamente i dati degli amici senza chiamare getUsersData
+          const friendsData = await Promise.all(friendUids.map(async (friendUid) => {
+            const db = getFirestore();
+            const userDocRef = doc(db, 'users', friendUid);
+            const userSnapshot = await getDoc(userDocRef);
+    
+            if (userSnapshot.exists()) {
+              return userSnapshot.data();
+            } else {
+              console.error(`Dati utente non trovati per l'UID ${friendUid}.`);
+              return null;
+            }
+          }));
+    
+          return friendsData.filter((friend) => friend !== null);
+        } else {
+          console.error('Dati utente non trovati.');
+          return [];
+        }
+      } catch (error) {
+        console.error('Errore durante l\'ottenimento dei dati degli amici:', error);
+        throw error;
+      }
+    };
+    
+
+
+
+
+
   // Funzione per caricare la posizione dell'utente
   const uploadUserLocation = async (latitude, longitude) => {
     try {
@@ -184,7 +223,17 @@ const UseAuthentication = () => {
   
 
 
-  return { userProfile, isLoading, handleLogout, updateProfile, configureProfile, getUserData, getUsersData, uploadUserLocation, uploadProfileImage };
+  return { userProfile,
+           isLoading,
+           handleLogout,
+           updateProfile,
+           configureProfile,
+           getUserData,
+           getUsersData,
+           getFriendsData,
+           uploadUserLocation, 
+           uploadProfileImage,
+          };
 };
 
 
