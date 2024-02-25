@@ -1,10 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated, Linking } from 'react-native';
 import { Card, Image } from 'react-native-elements';
 import UseAuthentication from '../utils/UseAuthentication';
 import LoadingScreen from '../components/LoadingScreen';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
+
+import InstagramIcon from '../assets/socialIcon/www.instagram.com.png';
+import TwitterIcon from '../assets/socialIcon/twitter.com.png';
+import TikTokIcon from '../assets/socialIcon/www.tiktok.com.png';
+import OnlyfnasIcon from '../assets/socialIcon/onlyfans.com.png';
+import LinkedinIcon from '../assets/socialIcon/linkedin.png';
+
+
+const socialIcons = [
+  { name: 'Facebook', link: 'https://www.facebook.com/', icon: 'facebook-square', image: null },
+  { name: 'Instagram', link: 'https://www.instagram.com/', icon: InstagramIcon, image: null },
+  { name: 'Twitter', link: 'https://twitter.com/', icon: TwitterIcon, image: null },
+  { name: 'TikTok', link: 'https://www.tiktok.com/@', icon: TikTokIcon, image: null },
+  { name: 'OnlyFans', link: 'https://www.onlyfans.com/', icon: OnlyfnasIcon, image: null },
+  { name: 'Linkedin', link: 'https://www.linkedin.com/', icon: LinkedinIcon, image: null },
+  // Aggiungi altre icone social se necessario
+];
 
 export default function HomeScreen({ navigation }) {
   const { isLoading, user, getUserData, getUsersData, getFriendsData } = UseAuthentication();
@@ -13,8 +30,6 @@ export default function HomeScreen({ navigation }) {
   const [flippedCards, setFlippedCards] = useState([]);
   const flipAnimations = useRef({}).current;
 
-
-  
   useEffect(() => {
     const fetchUserData = async () => {
       console.log('Fetching user data...');
@@ -33,20 +48,14 @@ export default function HomeScreen({ navigation }) {
   
     fetchUserData();
   }, []); // Usa un array di dipendenze vuoto per evitare il re-rendering continuo
-  
-
-  
 
   const handleCardPress = (cardId) => {
     setFlippedCards((prevFlippedCards) => {
       const isFlipped = prevFlippedCards.includes(cardId);
-
-      // Inverti il valore di flip
       const newFlippedCards = isFlipped
         ? prevFlippedCards.filter((id) => id !== cardId)
         : [...prevFlippedCards, cardId];
 
-      // Avvia l'animazione di flip
       Animated.timing(flipAnimations[cardId], {
         toValue: newFlippedCards.includes(cardId) ? 1 : 0,
         duration: 500,
@@ -57,16 +66,8 @@ export default function HomeScreen({ navigation }) {
     });
   };
 
-  const resetFlip = () => {
-    setFlippedCards([]);
-
-    Object.keys(flipAnimations).forEach((cardId) => {
-      Animated.timing(flipAnimations[cardId], {
-        toValue: 0,
-        duration: 500,
-        useNativeDriver: true,
-      }).start();
-    });
+  const openSocialProfile = (profileLink) => {
+    Linking.openURL(profileLink);
   };
 
   if (isLoading) {
@@ -87,96 +88,85 @@ export default function HomeScreen({ navigation }) {
 
             return (
               <TouchableOpacity key={cardId} onPress={() => handleCardPress(cardId)}>
-              <Animated.View
-                style={[
-                  styles.cardsContainer, // Applicare gli stili del contenitore della carta
-                  flippedCards.includes(cardId) && { zIndex: 1 },
-                  {
-                    transform: [
-                      {
-                        rotateY: flipAnimations[cardId].interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ['0deg', '360deg'],
-                        }),
-                      },
-                    ],
-                  },
-                ]}
-              >
-                <Card containerStyle={[styles.card, { height: 280 }]}>
-  {flippedCards.includes(cardId) ? (
-    // Contenuto visualizzato quando la carta è girata
-    <View style={styles.userInfoContainer}>
-      <Text style={styles.userInfoText}>Nome: {user.name}</Text>
-      <Text style={styles.userInfoText}>Cognome: {user.surname}</Text>
-      {/* Aggiungi altre informazioni desiderate */}
-      {user.socialLinks && user.socialLinks.facebook && (
-      <TouchableOpacity onPress={() => openSocialProfile(user.socialLinks.facebookProfile)}>
-        <Icon name="facebook-square" size={30} color="#3b5998" />
-      </TouchableOpacity>
-    )}
-    {user.socialLinks && user.socialLinks.instagram && (
-      <TouchableOpacity onPress={() => openSocialProfile(user.socialLinks.instagramProfile)}>
-        <Icon name="instagram" size={30} color="#833ab4" />
-      </TouchableOpacity>
-    )}
-    {user.socialLinks && user.socialLinks.twitter && (
-      <TouchableOpacity onPress={() => openSocialProfile(user.socialLinks.twitterProfile)}>
-        <Icon name="twitter" size={30} color="#1da1f2" />
-      </TouchableOpacity> 
-    )}
-    {user.socialLinks && user.socialLinks.tiktok && ( 
-      <TouchableOpacity onPress={() => openSocialProfile(user.socialLinks.tiktokProfile)}>
-        <Icon name="" size={30} color="#69c9d0" />
-      </TouchableOpacity>
-    )}
-    {user.socialLinks && user.socialLinks.onlyfans && (
-      <TouchableOpacity onPress={() => openSocialProfile(user.socialLinks.onlyfansProfile)}>
-        <Icon name="heart" size={30} color="#ff3f3f" />
-      </TouchableOpacity>
-    )} 
-    {/* Aggiungi altre icone social per gli altri profili, se necessario */}
-  </View>
-  ) : (
-    // Contenuto visualizzato quando la carta non è girata
-    <>
-      {user.profileImage ? (
-        <Image source={{ uri: user.profileImage }} style={styles.userImage} />
-      ) : (
-        <Image
-          source={require('../assets/default-profile-image.png')}
-          style={styles.userImage}
-        />
-      )}
-      <View style={styles.userNameContainer}>
-        <Text numberOfLines={1} ellipsizeMode="tail" style={styles.userName}>
-          {user.nickname}
-        </Text>
-      </View>
-    </>
-  )}
-</Card>
-
-              </Animated.View>
-            </TouchableOpacity>
-
+                <Animated.View
+                  style={[
+                    //styles.cardsContair,
+                    flippedCards.includes(cardId) && { zIndex: 1 },
+                    {
+                      transform: [
+                        {
+                          rotateY: flipAnimations[cardId].interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ['0deg', '360deg'],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  <Card containerStyle={[styles.card, { height: 280 }]}>
+                    {flippedCards.includes(cardId) ? (
+                      <View style={styles.userInfoContainer}>
+                        <Text style={styles.userInfoText}>Nome: {user.name} {user.surname}</Text>
+                        {user.socialLinks && (
+                          <View style={styles.iconContainer}>
+                            {Object.keys(user.socialLinks).map((social, index) => (
+                              <TouchableOpacity
+                                key={index}
+                                onPress={() => openSocialProfile(`https://www.${social}.com/${user.socialLinks[social]}`)}
+                              >
+                                <View style={styles.iconWithTextContainer}>
+                                  {socialIcons.map((icon) =>
+                                    icon.name.toLowerCase() === social.toLowerCase() ? (
+                                      <React.Fragment key={social}>
+                                        {typeof icon.icon === 'string' ? (
+                                          <Icon name={icon.icon} size={34} color="#3b5998" style={styles.icon} />
+                                        ) : (
+                                          <Image source={icon.icon} style={styles.icon} />
+                                        )}
+                                        <Text style={styles.iconText}>{icon.name}</Text>
+                                      </React.Fragment>
+                                    ) : null
+                                  )}
+                                </View>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        )}
+                      </View>
+                    ) : (
+                      <>
+                        {user.profileImage ? (
+                          <Image source={{ uri: user.profileImage }} style={styles.userImage} />
+                        ) : (
+                          <Image
+                            source={require('../assets/default-profile-image.png')}
+                            style={styles.userImage}
+                          />
+                        )}
+                        <View style={styles.userNameContainer}>
+                          <Text numberOfLines={1} ellipsizeMode="tail" style={styles.userName}>
+                            {user.nickname}
+                          </Text>
+                        </View>
+                      </>
+                    )}
+                  </Card>
+                </Animated.View>
+              </TouchableOpacity>
             );
           })}
         </View>
-        {/* Altre componenti dell'app */}
       </ScrollView>
     </View>
   );
 }
 
-// Rimani con gli stili e il resto del codice invariato
-
-
 const styles = StyleSheet.create({
   scrollViewContent: {
     alignItems: 'center',
     padding: 20,
-    paddingBottom: 100, // Adjust as needed based on the DistanceSelector height
+    paddingBottom: 100,
   },
   welcomeText: {
     fontSize: 24,
@@ -189,22 +179,20 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     width: '100%',
   },
-
-
   card: {
     borderRadius: 16,
     overflow: 'hidden',
   },
   userImage: {
     width: '100%',
-    height: 200, // Imposta un'altezza fissa per l'immagine del profilo
+    height: 200,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },
   userNameContainer: {
     padding: 10,
     width: '100%',
-    height: 80, // Imposta un'altezza fissa per il contenitore del nome dell'utente
+    height: 80,
   },
   userInfoContainer: {
     padding: 10,
@@ -213,27 +201,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 5,
   },
-
-
   userName: {
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  permissionDeniedContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  iconContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  iconWithTextContainer: {
+    marginTop: 20,
+    flexDirection: 'row',
     alignItems: 'center',
+    marginRight: 30, 
+    width: '60%', 
   },
-  permissionDeniedText: {
-    fontSize: 15,
-    textAlign: 'center',
-    marginBottom: 20,
+  iconText: {
+    marginLeft: 5,
   },
-  openSettingsText: {
-    color: 'blue',
-    fontSize: 16,
-    textDecorationLine: 'underline',
+  icon: {
+    width: 30,
+    height: 30,
+    marginBottom: 5,
   },
-  
 });
+ 
